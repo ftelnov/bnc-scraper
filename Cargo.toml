@@ -21,3 +21,6 @@ chrono = "0.4"
 
 # I prefer to use this tiny library to encapsulate some internal things and provide quick functional-style access to the fields.
 derive-getters = "0.2"
+
+# As we are to make application pluggable and implementation-agnostic, this is required.
+async-trait = "0.1"

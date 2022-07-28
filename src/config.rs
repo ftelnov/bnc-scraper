@@ -1,3 +1,4 @@
+use crate::core::config::CoreCfg;
 use crate::core::logging::LogCfg;
 use config::{Config, ConfigError, Environment, File};
 use derive_getters::Getters;
@@ -11,6 +12,10 @@ pub struct AppCfg {
     /// Logging configuration part of the application.
     #[serde(default)]
     pub logging: LogCfg,
+
+    /// Core configuration - contains cfgs for APIs interactions.
+    #[serde(default)]
+    pub core: CoreCfg,
 }
 
 impl AppCfg {
