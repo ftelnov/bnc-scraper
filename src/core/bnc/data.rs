@@ -1,25 +1,21 @@
-use serde::Deserialize;
-
-/// Symbol represents some trading paper in BNC system.
-pub type Symbol = String;
+use serde::{de, Deserialize, Serialize};
 
 /// UpdateID is supplied in most of the required binance API parts, so it's better to include it here.
 pub type UpdateId = u64;
 
+fn deserialize_amount<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: de::Deserializer<'de>,
+{
+    let s: &str = de::Deserialize::deserialize(deserializer)?;
+    s.parse()
+        .map_err(|_| de::Error::custom("Invalid amount format"))
+}
+
 /// It's fairly funny that amounts(e.g. in prices) in the states of binance API are presented as Strings.
 /// So we provide kind of encapsulation here just to feel a little safer.
-#[derive(Deserialize, Clone, Debug)]
-pub struct Amount(String);
-
-impl Amount {
-    /// transforms amount to big float type. Should be enough for most cases.
-    pub fn to_f64(&self) -> f64 {
-        self.0.parse().expect(&format!(
-            "Bnc provided incorrect price. Failed attempt at: {}",
-            self.0
-        ))
-    }
-}
+#[derive(Deserialize, Clone, Debug, PartialOrd, PartialEq)]
+pub struct Amount(#[serde(deserialize_with = "deserialize_amount")] f64);
 
 /// Binance order representation - holds price and amount.
 ///
@@ -36,4 +32,9 @@ impl InlineOrder {
     pub fn amount(&self) -> &Amount {
         &self.1
     }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct SymbolContainer<'a> {
+    pub symbol: &'a str,
 }

@@ -12,6 +12,5 @@ pub mod snapshot;
 /// Not all the deserializable traits are included here, some are moved to specific submodules, like snapshot module.
 pub mod data;
 
-// TODO: Implement the module.
 /// Holds error and result definitions for this part of the core.
 pub mod error;

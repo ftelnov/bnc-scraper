@@ -1,9 +1,11 @@
+use super::data::InlineOrder;
 use super::data::UpdateId;
-use super::data::{InlineOrder, Symbol};
+use super::error::BncResult;
 use async_trait::async_trait;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all(deserialize = "camelCase"))]
 pub struct SymbolSnapshot {
     pub last_update_id: UpdateId,
     pub bids: Vec<InlineOrder>,
@@ -13,6 +15,6 @@ pub struct SymbolSnapshot {
 /// Implementer of this trait are capable of fetching latest state of some symbol(in other words - snapshot).
 #[async_trait]
 pub trait SnapshotFetcher {
-    // TODO: change return time to Result to provide non-panicing behaviour.
-    async fn fetch_snapshot(&self, symbol: Symbol) -> SymbolSnapshot;
+    /// Fetch current snapshot of the symbol. Depth should be set to 1 here - we ain't gonna need any further.
+    async fn fetch_snapshot(&self, symbol: &str) -> BncResult<SymbolSnapshot>;
 }
