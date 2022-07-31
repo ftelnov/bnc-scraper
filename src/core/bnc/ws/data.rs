@@ -25,3 +25,23 @@ pub struct SymbolBookTick {
     #[serde(rename = "A")]
     pub ask_qty: Amount,
 }
+
+/// Generalisation of price update.
+///
+/// All tickers' updates should be convertable to general representation.
+#[derive(Debug, Clone)]
+pub struct SymbolStateUpdate {
+    pub update_id: u64,
+    pub bid: InlineOrder,
+    pub ask: InlineOrder,
+}
+
+impl From<SymbolBookTick> for SymbolStateUpdate {
+    fn from(tick: SymbolBookTick) -> Self {
+        Self {
+            update_id: tick.update_id,
+            bid: InlineOrder::new(tick.bid_price, tick.bid_qty),
+            ask: InlineOrder::new(tick.ask_price, tick.ask_qty),
+        }
+    }
+}

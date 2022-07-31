@@ -25,6 +25,10 @@ pub struct Amount(#[serde(deserialize_with = "deserialize_amount")] f64);
 pub struct InlineOrder(Amount, Amount);
 
 impl InlineOrder {
+    pub fn new(price: Amount, amount: Amount) -> Self {
+        Self(price, amount)
+    }
+
     pub fn price(&self) -> &Amount {
         &self.0
     }

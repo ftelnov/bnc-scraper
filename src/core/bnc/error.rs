@@ -12,6 +12,9 @@ pub enum BncError {
 
     #[error("Interaction with WS module failed. Origin error: {}", .0)]
     WsError(tokio_tungstenite::tungstenite::Error),
+
+    #[error("Could not send thread's data to the thread's master.")]
+    DataTransmitError,
 }
 
 pub type BncResult<T> = Result<T, BncError>;
