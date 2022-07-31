@@ -14,3 +14,6 @@ pub mod data;
 
 /// Holds error and result definitions for this part of the core.
 pub mod error;
+
+/// Holds realtime interactions with BNC API.
+pub mod ws;

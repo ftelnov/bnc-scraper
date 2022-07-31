@@ -9,6 +9,9 @@ pub enum BncError {
 
     #[error("Serialization framework was unable to process entity. Possibly some binance entity is malformed. Origin serde error: {}", .0)]
     SerdeError(serde_json::Error),
+
+    #[error("Interaction with WS module failed. Origin error: {}", .0)]
+    WsError(tokio_tungstenite::tungstenite::Error),
 }
 
 pub type BncResult<T> = Result<T, BncError>;
@@ -22,5 +25,11 @@ impl From<reqwest::Error> for BncError {
 impl From<serde_json::Error> for BncError {
     fn from(err: serde_json::Error) -> Self {
         Self::SerdeError(err)
+    }
+}
+
+impl From<tokio_tungstenite::tungstenite::Error> for BncError {
+    fn from(err: tokio_tungstenite::tungstenite::Error) -> Self {
+        Self::WsError(err)
     }
 }
