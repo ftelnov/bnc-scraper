@@ -1,5 +1,5 @@
 use super::config::WsCfg;
-use super::data::SymbolStateUpdate;
+use crate::core::bnc::ws::worker::price::{SymbolPriceUpdate, SymbolPriceWatcher};
 use crate::core::bnc::ws::worker::WsWorker;
 use futures::future::ready;
 use futures::Stream;
@@ -43,12 +43,15 @@ impl WsMaster {
         Self::new(cfg.baseurl.clone(), cfg.workers)
     }
 
-    pub fn run(self, symbol: &str) -> impl Stream<Item = SymbolStateUpdate> {
+    /// Schedules set amount of workers to listen for symbol's price updates.
+    ///
+    /// Stream will be balanced across them - the fastest one will place the update.
+    pub fn symbol_price_updates(&self, symbol: &str) -> impl Stream<Item = SymbolPriceUpdate> {
         let (sender, receiver) = mpsc::channel(100);
         for i in 0..self.workers_amount {
             info!("Worker #{i} scheduled.");
             let worker = WsWorker::new(&self.base_url);
-            worker.watch_price_updates(symbol, sender.clone());
+            worker.price_updates_watcher(symbol, sender.clone());
         }
         let stream = ReceiverStream::new(receiver);
 
@@ -86,10 +89,10 @@ mod tests {
         // Amount of validation steps before break;
         let break_at = 5;
 
-        let mut stream = master.run(symbol);
+        let mut stream = master.symbol_price_updates(symbol);
         let mut latest = stream.next().await.unwrap();
 
-        for i in 0..break_at {
+        for _ in 0..break_at {
             let current = stream.next().await.unwrap();
             assert!(latest.update_id < current.update_id);
             latest = current;

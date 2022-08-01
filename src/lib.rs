@@ -7,6 +7,8 @@ mod core;
 /// but the summary of these configuration files.
 pub mod config;
 
+pub mod ui;
+
 #[cfg(test)]
 mod tests {
     #[test]

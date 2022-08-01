@@ -1,0 +1,44 @@
+use super::config::WsCfg;
+use crate::core::bnc::error::BncResult;
+use futures::Stream;
+use futures_util::StreamExt;
+use tokio_tungstenite::connect_async;
+use tokio_tungstenite::tungstenite::Message;
+
+/// Order book keeping.
+pub mod depth;
+
+/// Realtime symbol's best price updating.
+pub mod price;
+
+/// WS worker handles realtime updates of the symbol's price.
+///
+/// It's purpose to schedule listening threads that will send the data to the provided sender.
+///
+/// It doesn't, however, provide load balancing across child processes - so worker's results may be repeated.
+pub struct WsWorker<'a> {
+    base_url: &'a str,
+}
+
+impl<'a> WsWorker<'a> {
+    pub fn new(base_url: &'a str) -> Self {
+        Self { base_url }
+    }
+
+    pub fn from_cfg(cfg: &'a WsCfg) -> Self {
+        Self::new(cfg.baseurl())
+    }
+}
+
+/// Connect to the given stream endpoint, cut undesired messages(like ping, etc) and unwrap errors
+async fn bnc_stream_connect(endpoint: &str) -> BncResult<impl Stream<Item = Message>> {
+    let (ws_stream, _) = connect_async(endpoint).await?;
+    Ok(ws_stream.filter_map(|message| async {
+        let message = message.ok()?;
+        if message.is_text() {
+            Some(message)
+        } else {
+            None
+        }
+    }))
+}
