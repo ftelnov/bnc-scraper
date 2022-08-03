@@ -37,3 +37,7 @@ futures-util = "0.3"
 
 # Websocket connections.
 tokio-tungstenite = { version = "0.17", features = ["native-tls"] }
+
+# Ui drawing.
+tui = "0.18"
+crossterm = "0.23"

@@ -1,9 +1,33 @@
 use super::config::WsCfg;
-use crate::core::bnc::error::BncResult;
+use crate::core::bnc::error::{BncError, BncResult};
 use futures::Stream;
 use futures_util::StreamExt;
+use tokio::sync::mpsc::Sender as TokioSender;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
+
+/// Implementors are to be used in transmitting messages from workers to messages' consumers.
+///
+/// Just an abstraction to keep things easier.
+#[async_trait::async_trait]
+pub trait MessageSender<T: Send>: Send {
+    /// Send message to some receiver. Returns error if message is rejected.
+    ///
+    /// Returns Ok() if message was sent to receiver.
+    ///
+    /// Implementors must not use blocking utilities inside implementation.
+    async fn send(&self, data: T) -> BncResult<()>;
+}
+
+#[async_trait::async_trait]
+impl<T: Send> MessageSender<T> for TokioSender<T> {
+    async fn send(&self, data: T) -> BncResult<()> {
+        self.send(data)
+            .await
+            .map_err(|_| BncError::DataTransmitError);
+        Ok(())
+    }
+}
 
 /// Order book keeping.
 pub mod depth;

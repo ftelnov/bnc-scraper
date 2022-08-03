@@ -9,6 +9,10 @@ pub mod config;
 
 pub mod ui;
 
+pub mod app;
+/// Utilities that absorbs ui, core and provide full-featured application.
+pub mod run;
+
 #[cfg(test)]
 mod tests {
     #[test]

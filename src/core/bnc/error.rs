@@ -15,6 +15,9 @@ pub enum BncError {
 
     #[error("Could not send thread's data to the thread's master.")]
     DataTransmitError,
+
+    #[error("Data was rejected by predicate. Possibly some conditions were unmet.")]
+    DataRejected,
 }
 
 pub type BncResult<T> = Result<T, BncError>;

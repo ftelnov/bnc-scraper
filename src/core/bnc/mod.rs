@@ -17,3 +17,6 @@ pub mod error;
 
 /// Holds realtime interactions with BNC API.
 pub mod ws;
+
+/// Holds general controller that absorbs workers, schedules tasks and provides current state of bnc data.
+pub mod state;

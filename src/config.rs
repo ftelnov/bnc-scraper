@@ -1,5 +1,6 @@
 use crate::core::config::CoreCfg;
 use crate::core::logging::LogCfg;
+use crate::ui::config::UICfg;
 use config::{Config, ConfigError, Environment, File};
 use derive_getters::Getters;
 use serde::Deserialize;
@@ -16,6 +17,9 @@ pub struct AppCfg {
     /// Core configuration - contains cfgs for APIs interactions.
     #[serde(default)]
     pub core: CoreCfg,
+
+    #[serde(default)]
+    pub ui: UICfg,
 }
 
 impl AppCfg {

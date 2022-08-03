@@ -1,8 +1,9 @@
 use super::WsWorker;
 use crate::core::bnc::data::InlineOrder;
 use crate::core::bnc::error::{BncError, BncResult};
+use crate::core::bnc::snapshot::SymbolSnapshot;
 use crate::core::bnc::ws::data::WsDataContainer;
-use crate::core::bnc::ws::worker::bnc_stream_connect;
+use crate::core::bnc::ws::worker::{bnc_stream_connect, MessageSender};
 use futures::Stream;
 use futures_util::StreamExt;
 use log::{debug, warn};
@@ -12,7 +13,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::task::JoinHandle;
 use tokio_tungstenite::connect_async;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Default, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SymbolDepthUpdate {
     #[serde(rename = "lastUpdateId")]
@@ -22,6 +23,16 @@ pub struct SymbolDepthUpdate {
     pub asks: Vec<InlineOrder>,
 }
 
+impl From<SymbolSnapshot> for SymbolDepthUpdate {
+    fn from(snapshot: SymbolSnapshot) -> Self {
+        Self {
+            id: snapshot.last_update_id,
+            asks: snapshot.asks,
+            bids: snapshot.bids,
+        }
+    }
+}
+
 pub trait SymbolDepthWatcher {
     /// Listen for depth realtime updates, send them via provided sender.
     ///
@@ -29,7 +40,7 @@ pub trait SymbolDepthWatcher {
     fn depth_updates_watcher(
         &self,
         symbol: &str,
-        sender: Sender<SymbolDepthUpdate>,
+        sender: impl MessageSender<SymbolDepthUpdate> + 'static,
     ) -> JoinHandle<BncResult<()>>;
 }
 
@@ -62,7 +73,7 @@ impl<'a> SymbolDepthWatcher for WsWorker<'a> {
     fn depth_updates_watcher(
         &self,
         symbol: &str,
-        sender: Sender<SymbolDepthUpdate>,
+        sender: impl MessageSender<SymbolDepthUpdate> + 'static,
     ) -> JoinHandle<BncResult<()>> {
         let depth_endpoint = depth_updates_endpoint(self.base_url, symbol);
         tokio::task::spawn(async move {
@@ -71,10 +82,16 @@ impl<'a> SymbolDepthWatcher for WsWorker<'a> {
                 match event {
                     Ok(update) => {
                         debug!("Worker received update tick. Tick: {:?}", update);
-                        sender
-                            .send(update)
-                            .await
-                            .map_err(|_| BncError::DataTransmitError)?;
+                        let send_result = sender.send(update);
+                        let send_result = send_result.await;
+                        match send_result {
+                            Ok(_) => {
+                                debug!("Worker successfully pushed depth update.")
+                            }
+                            Err(err) => {
+                                debug!("Worker was unable to push depth update. Error: {}", err)
+                            }
+                        }
                     }
                     Err(err) => {
                         warn!(

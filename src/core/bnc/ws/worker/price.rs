@@ -2,10 +2,12 @@ use super::super::data::WsDataContainer;
 use super::WsWorker;
 use crate::core::bnc::data::{Amount, InlineOrder};
 use crate::core::bnc::error::{BncError, BncResult};
-use crate::core::bnc::ws::worker::bnc_stream_connect;
+use crate::core::bnc::snapshot::SymbolSnapshot;
+use crate::core::bnc::state::Balanced;
+use crate::core::bnc::ws::worker::{bnc_stream_connect, MessageSender};
 use futures::Stream;
 use futures_util::StreamExt;
-use log::{debug, warn};
+use log::{debug, error, warn};
 use serde::Deserialize;
 use std::pin::Pin;
 use tokio::sync::mpsc::Sender;
@@ -16,7 +18,7 @@ use tokio_tungstenite::connect_async;
 #[derive(Debug, Deserialize, Clone)]
 struct SymbolBookTick {
     #[serde(rename = "u")]
-    update_id: u64,
+    id: u64,
 
     #[serde(rename = "b")]
     bid_price: Amount,
@@ -34,9 +36,9 @@ struct SymbolBookTick {
 /// Generalisation of price update.
 ///
 /// All tickers' updates should be convertable to general representation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct SymbolPriceUpdate {
-    pub update_id: u64,
+    pub id: u64,
     pub bid: InlineOrder,
     pub ask: InlineOrder,
 }
@@ -44,11 +46,42 @@ pub struct SymbolPriceUpdate {
 impl From<SymbolBookTick> for SymbolPriceUpdate {
     fn from(tick: SymbolBookTick) -> Self {
         Self {
-            update_id: tick.update_id,
+            id: tick.id,
             bid: InlineOrder::new(tick.bid_price, tick.bid_qty),
             ask: InlineOrder::new(tick.ask_price, tick.ask_qty),
         }
     }
+}
+
+impl From<SymbolSnapshot> for SymbolPriceUpdate {
+    fn from(snapshot: SymbolSnapshot) -> Self {
+        let empty_snapshot_notification =
+            "Snapshot returned by binance is empty. Are we corrupted?";
+        Self {
+            bid: snapshot
+                .bids
+                .into_iter()
+                .last()
+                .expect(empty_snapshot_notification),
+            ask: snapshot
+                .asks
+                .into_iter()
+                .last()
+                .expect(empty_snapshot_notification),
+            id: snapshot.last_update_id,
+        }
+    }
+}
+
+pub trait SymbolPriceWatcher {
+    /// Listen for price realtime updates, send them via provided sender.
+    ///
+    /// Returns JoinHandle of the spawned task in order to store somewhere else.
+    fn price_updates_watcher(
+        &self,
+        symbol: &str,
+        sender: impl MessageSender<SymbolPriceUpdate> + 'static,
+    ) -> JoinHandle<BncResult<()>>;
 }
 
 fn book_ticker_endpoint(base_endpoint: &str, symbol: &str) -> String {
@@ -75,34 +108,40 @@ async fn symbol_book_ticks(
     Ok(Box::pin(stream))
 }
 
-pub trait SymbolPriceWatcher {
-    /// Listen for price realtime updates, send them via provided sender.
-    ///
-    /// Returns JoinHandle of the spawned task in order to store somewhere else.
-    fn price_updates_watcher(
-        &self,
-        symbol: &str,
-        sender: Sender<SymbolPriceUpdate>,
-    ) -> JoinHandle<BncResult<()>>;
-}
-
 impl<'a> SymbolPriceWatcher for WsWorker<'a> {
     fn price_updates_watcher(
         &self,
         symbol: &str,
-        sender: Sender<SymbolPriceUpdate>,
+        sender: impl MessageSender<SymbolPriceUpdate> + 'static,
     ) -> JoinHandle<BncResult<()>> {
         let book_ticker_endpoint = book_ticker_endpoint(self.base_url, symbol);
-        tokio::task::spawn(async move {
+        let future = async move {
             let mut stream = symbol_book_ticks(&book_ticker_endpoint).await?;
             while let Some(event) = stream.next().await {
                 match event {
                     Ok(update) => {
                         debug!("Worker received symbol book tick. Tick: {:?}", update);
-                        sender
-                            .send(update.into())
-                            .await
-                            .map_err(|_| BncError::DataTransmitError)?;
+                        let send_result = sender.send(update.into());
+                        let send_result = send_result.await;
+                        match send_result {
+                            Err(err) => match err {
+                                BncError::DataTransmitError => {
+                                    warn!("Sender could not process data. Error: {}", err)
+                                }
+                                BncError::DataRejected => {
+                                    debug!("Data was rejected due to some predicate.")
+                                }
+                                err => {
+                                    error!(
+                                        "Data was rejected with unexpected error. Error: {}",
+                                        err
+                                    )
+                                }
+                            },
+                            _ => {
+                                debug!("Worker successfully sent data to consumer.")
+                            }
+                        }
                     }
                     Err(err) => {
                         warn!(
@@ -113,7 +152,8 @@ impl<'a> SymbolPriceWatcher for WsWorker<'a> {
                 }
             }
             BncResult::Ok(())
-        })
+        };
+        tokio::task::spawn(future)
     }
 }
 
@@ -159,9 +199,7 @@ mod tests {
         let symbol = "BTCUSDT";
 
         let worker = WsWorker::from_cfg(&cfg.core.bnc.ws);
-
-        let (sender, mut receiver) = mpsc::channel(10);
-
+        let (sender, mut receiver) = mpsc::channel(5);
         let handle = worker.price_updates_watcher(symbol, sender);
 
         let update = receiver.recv().await.unwrap();

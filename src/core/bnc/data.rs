@@ -1,4 +1,5 @@
 use serde::{de, Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 
 /// UpdateID is supplied in most of the required binance API parts, so it's better to include it here.
 pub type UpdateId = u64;
@@ -17,11 +18,23 @@ where
 #[derive(Deserialize, Clone, Debug, PartialOrd, PartialEq)]
 pub struct Amount(#[serde(deserialize_with = "deserialize_amount")] f64);
 
+impl Display for Amount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0.to_string())
+    }
+}
+
+impl Default for Amount {
+    fn default() -> Self {
+        Self(0.0)
+    }
+}
+
 /// Binance order representation - holds price and amount.
 ///
 /// Again, due to strange binance implementation we are to use tuple syntax here
 /// as they've provided arrays instead of json in some places.
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Default, Clone, Debug)]
 pub struct InlineOrder(Amount, Amount);
 
 impl InlineOrder {
