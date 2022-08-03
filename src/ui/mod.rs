@@ -11,7 +11,6 @@ use tui::Frame;
 pub mod config;
 pub mod runner;
 
-#[derive(Debug)]
 pub struct AppUI<'a> {
     price_update: Option<&'a SymbolPriceUpdate>,
     depth_update: Option<&'a SymbolDepthUpdate>,

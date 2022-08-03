@@ -7,7 +7,6 @@ use crate::core::bnc::state::{BncState, ControlledReceiver};
 use crate::core::bnc::ws::worker::depth::SymbolDepthUpdate;
 use crate::core::bnc::ws::worker::price::SymbolPriceUpdate;
 use crate::ui::AppUI;
-use log::debug;
 use std::fmt::Debug;
 use tokio::sync::mpsc::error::TryRecvError;
 use tui::backend::Backend;

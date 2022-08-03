@@ -53,6 +53,7 @@ mod tests {
     use log::info;
 
     // Loads current app's configuration and ensures that logger is loadable.
+    #[ignore]
     #[test]
     fn it_setup_app_logger() {
         let app_cfg = AppCfg::load().unwrap();

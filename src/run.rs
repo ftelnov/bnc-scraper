@@ -6,6 +6,7 @@ use anyhow::Result;
 use crossterm::event;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use futures::executor::block_on;
+use log::info;
 use std::io::Stdout;
 use std::time::{Duration, Instant};
 use tui::backend::{Backend, CrosstermBackend};
@@ -30,6 +31,7 @@ pub fn run_with_ui() -> Result<()> {
     setup_logger(&cfg.logging)?;
 
     let symbol = read_symbol()?;
+    info!("User chose symbol: {}.", symbol);
     let tick_rate = Duration::from_millis(cfg.ui.tick_rate);
     let mut app = App::new(cfg, symbol);
 

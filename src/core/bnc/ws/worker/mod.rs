@@ -1,4 +1,3 @@
-use super::config::WsCfg;
 use crate::core::bnc::error::{BncError, BncResult};
 use futures::Stream;
 use futures_util::StreamExt;
@@ -47,10 +46,6 @@ pub struct WsWorker<'a> {
 impl<'a> WsWorker<'a> {
     pub fn new(base_url: &'a str) -> Self {
         Self { base_url }
-    }
-
-    pub fn from_cfg(cfg: &'a WsCfg) -> Self {
-        Self::new(cfg.baseurl())
     }
 }
 

@@ -32,7 +32,7 @@ impl AppCfg {
     /// 4) Finally, from environment variables prefixed with standard prefix.
     ///
     pub fn load() -> Result<Self, ConfigError> {
-        let run_mode = env::var("RUN_MODE").unwrap_or("dev".into());
+        let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| "dev".into());
         let default_config_file = format!("{}/default", BASE_CONFIG_DIR);
         let environment_file = format!("{}/{}", BASE_CONFIG_DIR, run_mode);
         let local_file = format!("{}/local", BASE_CONFIG_DIR);
