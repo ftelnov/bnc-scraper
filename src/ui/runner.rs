@@ -1,15 +1,13 @@
 use anyhow::Result;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use std::io;
 use std::io::Stdout;
 use tui::backend::{Backend, CrosstermBackend};
-use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, Widget};
-use tui::{Frame, Terminal};
+use tui::Terminal;
 
 pub trait UiController: Sized {
     /// Setups terminal and makes it output to the stdout.

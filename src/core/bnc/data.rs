@@ -51,6 +51,12 @@ impl InlineOrder {
     }
 }
 
+impl Display for InlineOrder {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{}/{}", self.price(), self.amount()))
+    }
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct SymbolContainer<'a> {
     pub symbol: &'a str,

@@ -24,7 +24,7 @@ impl<T: Send> MessageSender<T> for TokioSender<T> {
     async fn send(&self, data: T) -> BncResult<()> {
         self.send(data)
             .await
-            .map_err(|_| BncError::DataTransmitError);
+            .map_err(|_| BncError::DataTransmitError)?;
         Ok(())
     }
 }

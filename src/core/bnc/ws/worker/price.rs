@@ -3,16 +3,13 @@ use super::WsWorker;
 use crate::core::bnc::data::{Amount, InlineOrder};
 use crate::core::bnc::error::{BncError, BncResult};
 use crate::core::bnc::snapshot::SymbolSnapshot;
-use crate::core::bnc::state::Balanced;
 use crate::core::bnc::ws::worker::{bnc_stream_connect, MessageSender};
 use futures::Stream;
 use futures_util::StreamExt;
 use log::{debug, error, warn};
 use serde::Deserialize;
 use std::pin::Pin;
-use tokio::sync::mpsc::Sender;
 use tokio::task::JoinHandle;
-use tokio_tungstenite::connect_async;
 
 /// Tick for an individual symbol's book update. Generally current best price for the provided symbol.
 #[derive(Debug, Deserialize, Clone)]
@@ -163,16 +160,15 @@ mod tests {
     use crate::config::AppCfg;
     use crate::core::logging::{setup_logger, LogCfg};
     use anyhow::Result;
-    use log::info;
-    use log::Level::Debug;
+    use log::{info, LevelFilter};
     use tokio::sync::mpsc;
 
     #[tokio::test]
     async fn it_watches_for_first_symbol_update_using_tick_book() -> Result<()> {
         let cfg = AppCfg::load()?;
         setup_logger(&LogCfg {
-            enabled: true,
-            level: Debug,
+            level: LevelFilter::Debug,
+            ..Default::default()
         })
         .ok();
         let symbol = "BTCUSDT";
@@ -191,8 +187,8 @@ mod tests {
         let cfg = AppCfg::load()?;
 
         setup_logger(&LogCfg {
-            enabled: true,
-            level: Debug,
+            level: LevelFilter::Debug,
+            ..Default::default()
         })
         .ok();
 

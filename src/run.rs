@@ -1,12 +1,11 @@
 use crate::app::App;
 use crate::config::AppCfg;
-use crate::core::bnc::ws::worker::depth::SymbolDepthUpdate;
-use crate::core::bnc::ws::worker::price::SymbolPriceUpdate;
+use crate::core::logging::setup_logger;
 use crate::ui::runner::{UiController, UiRunner};
-use crate::ui::AppUI;
 use anyhow::Result;
 use crossterm::event;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
+use futures::executor::block_on;
 use std::io::Stdout;
 use std::time::{Duration, Instant};
 use tui::backend::{Backend, CrosstermBackend};
@@ -27,14 +26,18 @@ pub fn read_symbol() -> Result<String> {
 
 /// Run application with UI. Use it from binaries directly.
 pub fn run_with_ui() -> Result<()> {
-    let symbol = read_symbol()?;
-
-    let mut runner: UiRunner<CrosstermBackend<Stdout>> = UiRunner::new()?;
     let cfg = AppCfg::load()?;
+    setup_logger(&cfg.logging)?;
 
+    let symbol = read_symbol()?;
     let tick_rate = Duration::from_millis(cfg.ui.tick_rate);
+    let mut app = App::new(cfg, symbol);
 
-    let app = App::new(cfg, symbol);
+    // Block until app's state is completely initialised.
+    block_on(app.init())?;
+
+    //.. And only after that we initialise UI.
+    let mut runner: UiRunner<CrosstermBackend<Stdout>> = UiRunner::new()?;
 
     run_app(&mut runner.terminal, app, tick_rate)?;
 

@@ -1,6 +1,6 @@
 use super::WsWorker;
 use crate::core::bnc::data::InlineOrder;
-use crate::core::bnc::error::{BncError, BncResult};
+use crate::core::bnc::error::BncResult;
 use crate::core::bnc::snapshot::SymbolSnapshot;
 use crate::core::bnc::ws::data::WsDataContainer;
 use crate::core::bnc::ws::worker::{bnc_stream_connect, MessageSender};
@@ -9,9 +9,7 @@ use futures_util::StreamExt;
 use log::{debug, warn};
 use serde::Deserialize;
 use std::pin::Pin;
-use tokio::sync::mpsc::Sender;
 use tokio::task::JoinHandle;
-use tokio_tungstenite::connect_async;
 
 #[derive(Deserialize, Default, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -46,7 +44,7 @@ pub trait SymbolDepthWatcher {
 
 fn depth_updates_endpoint(base_endpoint: &str, symbol: &str) -> String {
     format!(
-        "{base_url}/stream?streams={symbol}@depth5",
+        "{base_url}/stream?streams={symbol}@depth10",
         base_url = base_endpoint,
         symbol = symbol.to_ascii_lowercase()
     )
@@ -112,8 +110,7 @@ mod tests {
     use crate::config::AppCfg;
     use crate::core::logging::{setup_logger, LogCfg};
     use anyhow::Result;
-    use log::info;
-    use log::Level::Debug;
+    use log::{info, LevelFilter};
     use tokio::sync::mpsc;
 
     struct TestCtx {
@@ -124,8 +121,8 @@ mod tests {
         fn new() -> Self {
             let cfg = AppCfg::load().unwrap();
             setup_logger(&LogCfg {
-                enabled: true,
-                level: Debug,
+                level: LevelFilter::Debug,
+                ..Default::default()
             })
             .ok();
             Self { cfg }

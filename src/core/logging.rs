@@ -1,21 +1,24 @@
 use derive_getters::Getters;
-use log::Level;
+use log::LevelFilter;
 use serde::Deserialize;
 
 // In real-world application this boilerplate should be moved into separated module in order to use in sub-projects.
 // Logging won't include writing things to any files - use pipes instead.
 
 #[derive(Getters, Deserialize, Clone, Debug)]
+#[serde(default)]
 pub struct LogCfg {
-    pub level: Level,
+    pub level: LevelFilter,
     pub enabled: bool,
+    pub logfile: String,
 }
 
 impl Default for LogCfg {
     fn default() -> Self {
         Self {
-            level: Level::Info,
+            level: LevelFilter::Info,
             enabled: true,
+            logfile: String::from("logs/default.log"),
         }
     }
 }
@@ -36,8 +39,8 @@ pub fn setup_logger(cfg: &LogCfg) -> Result<(), fern::InitError> {
                 message
             ))
         })
-        .level(cfg.level.to_level_filter())
-        .chain(std::io::stdout());
+        .level(cfg.level)
+        .chain(fern::log_file(&cfg.logfile)?);
 
     logger.apply()?;
     Ok(())

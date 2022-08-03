@@ -1,14 +1,10 @@
-use super::data::InlineOrder;
 use crate::core::bnc::config::BncCfg;
 use crate::core::bnc::error::BncError::DataTransmitError;
 use crate::core::bnc::error::{BncError, BncResult};
 use crate::core::bnc::ws::worker::depth::{SymbolDepthUpdate, SymbolDepthWatcher};
 use crate::core::bnc::ws::worker::price::{SymbolPriceUpdate, SymbolPriceWatcher};
 use crate::core::bnc::ws::worker::{MessageSender, WsWorker};
-use futures::Stream;
-use futures_util::future::ready;
 use log::debug;
-use std::ops::Deref;
 use std::sync::Arc;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::Mutex;
@@ -54,7 +50,6 @@ impl<T> MessageBalancer<T> {
 #[async_trait::async_trait]
 impl<B: Balanced + Send> MessageSender<B> for Arc<Mutex<MessageBalancer<B>>> {
     async fn send(&self, data: B) -> BncResult<()> {
-        debug!("Send is called now");
         let mut balancer = self.lock().await;
         if let Some(ref mut last_update_id) = balancer.last_update_id {
             if data.update_id() > *last_update_id {
@@ -90,6 +85,10 @@ impl<T> ControlledReceiver<T> {
     /// Finalize receiver, abort it's child tasks.
     pub fn finalize(&self) {
         self.tasks.iter().for_each(|task| task.abort())
+    }
+
+    pub fn receiver_mut(&mut self) -> &mut Receiver<T> {
+        &mut self.receiver
     }
 }
 
@@ -150,8 +149,7 @@ mod tests {
     use crate::core::bnc::ws::config::WsCfg;
     use crate::core::logging::{setup_logger, LogCfg};
     use anyhow::Result;
-    use log::Level;
-    use tokio_stream::wrappers::ReceiverStream;
+    use log::LevelFilter;
 
     struct TestCtx {
         cfg: BncCfg,
@@ -160,7 +158,7 @@ mod tests {
     impl TestCtx {
         fn new() -> Self {
             setup_logger(&LogCfg {
-                level: Level::Debug,
+                level: LevelFilter::Debug,
                 ..Default::default()
             })
             .ok();

@@ -1,4 +1,5 @@
 use crate::config::AppCfg;
+use crate::core::bnc::error::BncError::DataTransmitError;
 use crate::core::bnc::error::BncResult;
 use crate::core::bnc::rest::BncRestClient;
 use crate::core::bnc::snapshot::SnapshotFetcher;
@@ -6,7 +7,9 @@ use crate::core::bnc::state::{BncState, ControlledReceiver};
 use crate::core::bnc::ws::worker::depth::SymbolDepthUpdate;
 use crate::core::bnc::ws::worker::price::SymbolPriceUpdate;
 use crate::ui::AppUI;
-use tokio::sync::mpsc::Receiver;
+use log::debug;
+use std::fmt::Debug;
+use tokio::sync::mpsc::error::TryRecvError;
 use tui::backend::Backend;
 use tui::Frame;
 
@@ -62,10 +65,43 @@ impl App {
         Ok(())
     }
 
+    /// Takes current value from controlled receiver.
+    ///
+    /// If receiver is None - Ok(None);
+    /// If receiver if empty - Ok(None);
+    /// If receiver is disconnected - Err(DataTransmitError);
+    ///
+    /// Else - Some(T)
+    fn take_from_receiver<T: Debug>(
+        receiver: &mut Option<ControlledReceiver<T>>,
+    ) -> BncResult<Option<T>> {
+        receiver.as_mut().map_or(Ok(None), |r| {
+            let receiver = r.receiver_mut();
+            let received = receiver.try_recv();
+            match received {
+                Ok(data) => Ok(Some(data)),
+                Err(err) => match err {
+                    TryRecvError::Empty => Ok(None),
+                    TryRecvError::Disconnected => Err(DataTransmitError),
+                },
+            }
+        })
+    }
+
     /// Actions that are to be performed on each tick of an application.
     ///
     /// For example, here should latest backend updates fetching goes.
     pub fn on_tick(&mut self) -> BncResult<()> {
+        let price_update = Self::take_from_receiver(&mut self.price_updates_receiver)?;
+        let depth_update = Self::take_from_receiver(&mut self.depth_updates_receiver)?;
+
+        if price_update.is_some() {
+            self.current_price = price_update;
+        }
+        if depth_update.is_some() {
+            self.current_depth = depth_update;
+        }
+
         Ok(())
     }
 
