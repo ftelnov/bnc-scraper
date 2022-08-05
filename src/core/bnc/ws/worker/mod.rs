@@ -1,4 +1,5 @@
 use crate::core::bnc::error::{BncError, BncResult};
+use crate::core::bnc::ws::config::WsCfg;
 use futures::Stream;
 use futures_util::StreamExt;
 use tokio::sync::mpsc::Sender as TokioSender;
@@ -46,6 +47,12 @@ pub struct WsWorker<'a> {
 impl<'a> WsWorker<'a> {
     pub fn new(base_url: &'a str) -> Self {
         Self { base_url }
+    }
+
+    pub fn from_cfg(cfg: &'a WsCfg) -> Self {
+        Self {
+            base_url: &cfg.baseurl,
+        }
     }
 }
 

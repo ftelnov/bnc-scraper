@@ -1,6 +1,8 @@
 use derive_getters::Getters;
 use log::LevelFilter;
 use serde::Deserialize;
+use std::fs::create_dir_all;
+use std::path::Path;
 
 // In real-world application this boilerplate should be moved into separated module in order to use in sub-projects.
 // Logging won't include writing things to any files - use pipes instead.
@@ -39,8 +41,15 @@ pub fn setup_logger(cfg: &LogCfg) -> Result<(), fern::InitError> {
                 message
             ))
         })
-        .level(cfg.level)
-        .chain(fern::log_file(&cfg.logfile)?);
+        .level(cfg.level);
+
+    // Create parent directory for specified logfile.
+    let path = Path::new(&cfg.logfile);
+    if let Some(parent) = path.parent() {
+        create_dir_all(parent)?;
+    }
+
+    let logger = logger.chain(fern::log_file(&cfg.logfile)?);
 
     logger.apply()?;
     Ok(())
