@@ -45,6 +45,11 @@ impl OrderTable {
 
     /// Update this table so level will satisfy provided order.
     pub fn update_level(&mut self, order: InlineOrder) {
+        let qty_not_empty = order.1.chars().any(|char| char != '0' && char != '.');
+        if !qty_not_empty {
+            self.0.remove(&order.0);
+            return;
+        }
         let entry = self.0.entry(order.0);
         match entry {
             Entry::Vacant(vc) => {
