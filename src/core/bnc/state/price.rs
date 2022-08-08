@@ -1,7 +1,7 @@
 use crate::core::bnc::error::BncResult;
 use crate::core::bnc::state::balancer::MessageBalancer;
 use crate::core::bnc::ws::config::WsCfg;
-use crate::core::bnc::ws::worker::depth::SymbolDepthWatcher;
+
 use crate::core::bnc::ws::worker::price::{SymbolPriceUpdate, SymbolPriceWatcher};
 use crate::core::bnc::ws::worker::WsWorker;
 use log::debug;
@@ -66,7 +66,7 @@ mod tests {
     use super::*;
     use crate::config::AppCfg;
     use crate::core::bnc::state::balancer::BalancedEntity;
-    use crate::core::logging::setup_logger;
+
     use crate::core::logging::tests::setup_test_logger;
     use anyhow::Result;
     use std::ops::Deref;

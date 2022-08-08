@@ -9,7 +9,7 @@ use crate::core::bnc::ws::worker::{MessageSender, WsWorker};
 use log::debug;
 use reqwest::Client;
 use std::collections::btree_map::Entry;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use tokio::sync::watch::{channel, Receiver, Sender};
 use tokio::sync::Mutex;

@@ -1,7 +1,7 @@
 use super::WsWorker;
 use crate::core::bnc::data::InlineOrder;
 use crate::core::bnc::error::BncResult;
-use crate::core::bnc::snapshot::SymbolSnapshot;
+
 use crate::core::bnc::ws::data::WsDataContainer;
 use crate::core::bnc::ws::worker::{bnc_stream_connect, MessageSender};
 use futures::Stream;

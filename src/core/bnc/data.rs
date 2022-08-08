@@ -1,4 +1,4 @@
-use serde::{de, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
 /// UpdateID is supplied in most of the required binance API parts, so it's better to include it here.

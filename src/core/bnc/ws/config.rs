@@ -5,14 +5,14 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Deserialize, Getters)]
 pub struct WsCfg {
     pub baseurl: String,
-    pub workers: u64
+    pub workers: u64,
 }
 
 impl Default for WsCfg {
     fn default() -> Self {
         Self {
             baseurl: String::from("wss://stream.binance.com:9443"),
-            workers: 5
+            workers: 5,
         }
     }
 }

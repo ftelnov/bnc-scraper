@@ -1,6 +1,5 @@
-use crate::core::bnc::data::InlineOrder;
 use crate::core::bnc::state::book::{OrderBookDisplay, TableDisplay};
-use crate::core::bnc::ws::worker::depth::SymbolDepthUpdate;
+
 use crate::core::bnc::ws::worker::price::SymbolPriceUpdate;
 use tui::backend::Backend;
 use tui::layout::Direction::Vertical;

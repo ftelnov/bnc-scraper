@@ -1,16 +1,16 @@
-use crate::app::{App, SharedTerminal};
+use crate::app::App;
 use crate::config::AppCfg;
 use crate::core::logging::setup_logger;
 use crate::ui::runner::{UiController, UiRunner};
 use anyhow::Result;
 use crossterm::event;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
-use futures::executor::block_on;
+
 use log::info;
 use std::io::Stdout;
-use std::sync::Arc;
+
 use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
+
 use tui::backend::{Backend, CrosstermBackend};
 use tui::Terminal;
 
