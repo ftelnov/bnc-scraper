@@ -1,4 +1,4 @@
-use crate::app::App;
+use crate::app::{App, SharedTerminal};
 use crate::config::AppCfg;
 use crate::core::logging::setup_logger;
 use crate::ui::runner::{UiController, UiRunner};
@@ -8,7 +8,9 @@ use crossterm::event::{Event, KeyCode, KeyModifiers};
 use futures::executor::block_on;
 use log::info;
 use std::io::Stdout;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tokio::sync::Mutex;
 use tui::backend::{Backend, CrosstermBackend};
 use tui::Terminal;
 
@@ -26,22 +28,21 @@ pub fn read_symbol() -> Result<String> {
 }
 
 /// Run application with UI. Use it from binaries directly.
-pub fn run_with_ui() -> Result<()> {
+pub async fn run_with_ui() -> Result<()> {
     let cfg = AppCfg::load()?;
     setup_logger(&cfg.logging)?;
 
     let symbol = read_symbol()?;
     info!("User chose symbol: {}.", symbol);
     let tick_rate = Duration::from_millis(cfg.ui.tick_rate);
-    let mut app = App::new(cfg, symbol);
+    let mut app = App::new(&cfg, symbol);
 
-    // Block until app's state is completely initialised.
-    block_on(app.init())?;
+    app.init().await?;
 
     //.. And only after that we initialise UI.
     let mut runner: UiRunner<CrosstermBackend<Stdout>> = UiRunner::new()?;
 
-    run_app(&mut runner.terminal, app, tick_rate)?;
+    run_app(&mut runner.terminal, app, tick_rate).await?;
 
     runner.finalize()?;
 
@@ -50,12 +51,13 @@ pub fn run_with_ui() -> Result<()> {
     Ok(())
 }
 
-pub fn run_app<B: Backend>(
+pub async fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
-    mut app: App,
+    mut app: App<'_>,
     tick_rate: Duration,
 ) -> Result<()> {
-    let mut last_tick = Instant::now();
+    let last_tick = Instant::now();
+
     loop {
         terminal.draw(|f| app.draw(f))?;
 
@@ -72,11 +74,6 @@ pub fn run_app<B: Backend>(
                     _ => {}
                 }
             }
-        }
-
-        if last_tick.elapsed() >= tick_rate {
-            app.on_tick()?;
-            last_tick = Instant::now();
         }
 
         if app.should_quit() {

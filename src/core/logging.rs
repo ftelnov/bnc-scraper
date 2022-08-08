@@ -56,10 +56,19 @@ pub fn setup_logger(cfg: &LogCfg) -> Result<(), fern::InitError> {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::config::AppCfg;
     use log::info;
+    use log::LevelFilter::Debug;
+
+    pub fn setup_test_logger() {
+        setup_logger(&LogCfg {
+            level: Debug,
+            ..Default::default()
+        })
+        .ok();
+    }
 
     // Loads current app's configuration and ensures that logger is loadable.
     #[ignore]

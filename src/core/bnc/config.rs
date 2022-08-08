@@ -6,8 +6,6 @@ use serde::Deserialize;
 pub struct BncCfg {
     pub baseurl: String,
 
-    /// Amount of messages tokio's channels can store.
-    pub chnlcapacity: usize,
     pub ws: WsCfg,
 }
 
@@ -16,7 +14,6 @@ impl Default for BncCfg {
         Self {
             baseurl: "https://api.binance.com".into(),
             ws: Default::default(),
-            chnlcapacity: 64,
         }
     }
 }

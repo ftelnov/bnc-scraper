@@ -10,7 +10,7 @@ use tokio_tungstenite::tungstenite::Message;
 ///
 /// Just an abstraction to keep things easier.
 #[async_trait::async_trait]
-pub trait MessageSender<T: Send>: Send {
+pub trait MessageSender<T: Send + Sync>: Send {
     /// Send message to some receiver. Returns error if message is rejected.
     ///
     /// Returns Ok() if message was sent to receiver.
@@ -20,7 +20,7 @@ pub trait MessageSender<T: Send>: Send {
 }
 
 #[async_trait::async_trait]
-impl<T: Send> MessageSender<T> for TokioSender<T> {
+impl<T: Send + Sync> MessageSender<T> for TokioSender<T> {
     async fn send(&self, data: T) -> BncResult<()> {
         self.send(data)
             .await

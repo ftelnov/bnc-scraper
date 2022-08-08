@@ -1,6 +1,6 @@
 use super::super::data::WsDataContainer;
 use super::WsWorker;
-use crate::core::bnc::data::{Amount, InlineOrder};
+use crate::core::bnc::data::{InlineOrder, PriceLevel, Qty};
 use crate::core::bnc::error::{BncError, BncResult};
 use crate::core::bnc::snapshot::SymbolSnapshot;
 use crate::core::bnc::ws::worker::{bnc_stream_connect, MessageSender};
@@ -18,16 +18,16 @@ struct SymbolBookTick {
     id: u64,
 
     #[serde(rename = "b")]
-    bid_price: Amount,
+    bid_price: PriceLevel,
 
     #[serde(rename = "B")]
-    bid_qty: Amount,
+    bid_qty: Qty,
 
     #[serde(rename = "a")]
-    ask_price: Amount,
+    ask_price: PriceLevel,
 
     #[serde(rename = "A")]
-    ask_qty: Amount,
+    ask_qty: Qty,
 }
 
 /// Generalisation of price update.
@@ -95,10 +95,7 @@ async fn symbol_book_ticks(
 ) -> BncResult<Pin<Box<impl Stream<Item = BncResult<SymbolBookTick>>>>> {
     let stream = bnc_stream_connect(endpoint).await?;
     let stream = stream.map(|message| {
-        debug!(
-            "Received symbol price update event. Message: {:?}.",
-            message
-        );
+        debug!("Received symbol price update event.");
         let update: WsDataContainer<SymbolBookTick> = serde_json::from_slice(&message.into_data())?;
         Ok(update.data)
     });
